@@ -1,0 +1,20 @@
+# create nextjs app
+npx create-next-app rubin-chatbot
+cd rubin-chatbot
+
+# pass ip address to the dev 
+"dev": "next dev -H 10.128.138.175",
+
+# run the app
+npm run dev 
+
+# connect to supabase 
+npx supabase init 
+npx supabase start
+
+# connect to github
+gh repo create rubin-chatbot --public
+git remote add origin https://github.com/david3xu/rubin-chatbot.git
+
+# create a page 
+
