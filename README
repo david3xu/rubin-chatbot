@@ -11,10 +11,22 @@ npm run dev
 # connect to supabase 
 npx supabase init 
 npx supabase start
+npx supabase status
 
 # connect to github
 gh repo create rubin-chatbot --public
 git remote add origin https://github.com/david3xu/rubin-chatbot.git
+git branch -M main
+git push -u origin main
+
+git status
+git add .
+git commit -m "initial commit"
+git push
+
+# auto indent code in vscode
+shift + alt + f
+
 
 # create a page 
 
