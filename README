@@ -8,10 +8,20 @@ cd rubin-chatbot
 # run the app
 npm run dev 
 
-# connect to supabase 
+# connect to local supabase 
 npx supabase init 
 npx supabase start
 npx supabase status
+
+# create supabase tables and search function 
+npx supabase migration new docs
+npx supabase migration up
+npx supabase db reset
+
+
+# connect to supabase cloud
+
+
 
 # connect to github
 gh repo create rubin-chatbot --public
@@ -28,5 +38,5 @@ git push
 shift + alt + f
 
 
-# create a page 
+
 
