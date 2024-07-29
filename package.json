@@ -3,12 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -H 10.128.138.175",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "format": "prettier --write \"./**/*.{js,jsx,ts,tsx,css,md,json}\"",
+    "embeddings": "tsx lib/generate-embeddings.ts",
+    "embeddings:refresh": "tsx lib/generate-embeddings.ts --refresh"
   },
   "dependencies": {
+    "@langchain/community": "^0.2.20",
+    "@langchain/openai": "^0.2.5",
     "@nanostores/react": "github:ai/react",
     "@radix-ui/react-dialog": "^1.1.1",
     "@radix-ui/react-label": "^2.1.0",
@@ -17,25 +22,37 @@
     "class-variance-authority": "^0.7.0",
     "cmdk": "^1.0.0",
     "common-tags": "^1.8.2",
+    "dotenv": "^16.4.5",
     "fs": "^0.0.1-security",
+    "github-slugger": "^2.0.0",
     "gpt3-tokenizer": "^1.1.5",
     "lucide-react": "^0.416.0",
+    "mdast": "^3.0.0",
+    "mdast-util-from-markdown": "^2.0.1",
+    "mdast-util-mdx": "^3.0.0",
+    "micromark-extension-mdxjs": "^3.0.0",
     "next": "^14.2.5",
     "ollama": "^0.5.6",
     "openai": "^4.53.2",
     "react": "^18",
     "react-dom": "^18",
-    "tailwind-merge": "^2.4.0"
+    "tailwind-merge": "^2.4.0",
+    "unist-builder": "^4.0.0",
+    "unist-util-filter": "^5.0.1",
+    "yargs": "^17.7.2"
   },
   "devDependencies": {
     "@types/common-tags": "^1.8.4",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/yargs": "^17.0.32",
     "eslint": "^8",
     "eslint-config-next": "14.2.5",
     "postcss": "^8",
+    "prettier": "^2.5.1",
     "tailwindcss": "^3.4.1",
+    "tsx": "^4.16.2",
     "typescript": "^5"
   }
 }

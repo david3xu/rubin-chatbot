@@ -1,6 +1,8 @@
+import dotenv from 'dotenv'
+dotenv.config({path: __dirname + '/../.env.local'})
+
 import { createClient } from '@supabase/supabase-js'
 import { createHash } from 'crypto'
-import dotenv from 'dotenv'
 import { ObjectExpression } from 'estree'
 import { readdir, readFile, writeFile, stat } from 'fs/promises'
 import GithubSlugger from 'github-slugger'
@@ -10,26 +12,25 @@ import { mdxFromMarkdown, MdxjsEsm } from 'mdast-util-mdx'
 import { toMarkdown } from 'mdast-util-to-markdown'
 import { toString } from 'mdast-util-to-string'
 import { mdxjs } from 'micromark-extension-mdxjs'
-// import 'openai'
-// import { Configuration, OpenAIApi } from 'openai'
 import OpenAI from 'openai'
 import { basename, dirname, join } from 'path'
 import { u } from 'unist-builder'
 import { filter } from 'unist-util-filter'
 import { inspect } from 'util'
 import yargs from 'yargs'
-import { OpenAIEmbeddings } from "@langchain/openai"
-import { OllamaEmbeddings } from "@langchain/community/embeddings/ollama"
+import { hideBin } from 'yargs/helpers'
 import Client from 'openai'
 // import { readFile, writeFile } from 'fs';
 import { promises as fs } from 'fs'
+import ollama from 'ollama'
 
-
-
-
-dotenv.config()
 
 const ignoredFiles = ['pages/404.mdx']
+
+// Log environment variables to verify they are loaded correctly
+console.log('NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY);
+console.log('OPENAI_API_KEY:', process.env.OPENAI_API_KEY);
 
 /**
  * Extracts ES literals from an `estree` `ObjectExpression`
@@ -275,7 +276,7 @@ class MarkdownEmbeddingSource extends BaseEmbeddingSource {
 type EmbeddingSource = MarkdownEmbeddingSource
 
 async function generateEmbeddings() {
-  const argv = await yargs.option('refresh', {
+  const argv = await yargs(hideBin(process.argv)).option('refresh', {
     alias: 'r',
     description: 'Refresh data',
     type: 'boolean',
@@ -286,11 +287,11 @@ async function generateEmbeddings() {
 
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.SUPABASE_SERVICE_ROLE_KEY   
-    // !process.env.OPENAI_KEY
+    !process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    !process.env.OPENAI_API_KEY
   ) {
     return console.log(
-      'Environment variables NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and OPENAI_KEY are required: skipping embeddings generation'
+      'Environment variables NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and OPENAI_API_KEY are required: skipping embeddings generation'
     )
   }
 
@@ -339,7 +340,7 @@ async function generateEmbeddings() {
 
       // Check for existing page in DB and compare checksums
       const { error: fetchPageError, data: existingPage } = await supabaseClient
-        .from('nods_page')
+        .from('nodes_page')
         .select('id, path, checksum, parentPage:parent_page_id(id, path)')
         .filter('path', 'eq', path)
         .limit(1)
@@ -361,7 +362,7 @@ async function generateEmbeddings() {
         if ((existingParentPage as unknown as { path?: string })?.path !== parentPath) {
           console.log(`[${path}] Parent page has changed. Updating to '${parentPath}'...`)
           const { error: fetchParentPageError, data: parentPage } = await supabaseClient
-            .from('nods_page')
+            .from('nodes_page')
             .select()
             .filter('path', 'eq', parentPath)
             .limit(1)
@@ -372,7 +373,7 @@ async function generateEmbeddings() {
           }
 
           const { error: updatePageError } = await supabaseClient
-            .from('nods_page')
+            .from('nodes_page')
             .update({ parent_page_id: parentPage?.id })
             .filter('id', 'eq', existingPage.id)
 
@@ -393,7 +394,7 @@ async function generateEmbeddings() {
         }
 
         const { error: deletePageSectionError } = await supabaseClient
-          .from('nods_page_section')
+          .from('nodes_page_section')
           .delete()
           .filter('page_id', 'eq', existingPage.id)
 
@@ -403,7 +404,7 @@ async function generateEmbeddings() {
       }
 
       const { error: fetchParentPageError, data: parentPage } = await supabaseClient
-        .from('nods_page')
+        .from('nodes_page')
         .select()
         .filter('path', 'eq', parentPath)
         .limit(1)
@@ -416,7 +417,7 @@ async function generateEmbeddings() {
       // Create/update page record. Intentionally clear checksum until we
       // have successfully generated all page sections.
       const { error: upsertPageError, data: page } = await supabaseClient
-        .from('nods_page')
+        .from('nodes_page')
         .upsert(
           {
             checksum: null,
@@ -443,59 +444,43 @@ async function generateEmbeddings() {
 
         try {
 
-          const openai = new OpenAI({
-            apiKey: 'ollama',
-            baseURL: 'http://10.128.138.175:8080/v1',
-            // baseURL: 'http://10.128.138.175:11434/v1',
-
-          })
-
-          // const openai = new Client({
-          //   apiKey: process.env.OPENAI_KEY,
+          // const openai = new OpenAI({
+          //   apiKey: 'ollama',
           //   baseURL: 'http://10.128.138.175:8080/v1',
-          // });
+          //   // baseURL: 'http://10.128.138.175:11434/v1',
 
-          console.log("input", input)                               
-          const embeddingResponse = await openai.embeddings.create({
-            model: 'nomic-embed-text:latest',
-            input: [input],
-          })
-          console.log("embeddingResponse", embeddingResponse)
-          // if (embeddingResponse.data[0].status !== 200) {
-          //   throw new Error(inspect(embeddingResponse.data, false, 2))
-          // }
+          // })
 
-          const responseData = embeddingResponse.data[0].embedding
-          console.log("responseData", responseData)   
-          console.log("embedding length", embeddingResponse.data[0].embedding.length)
-
-
-          // const custom_model = new OpenAIEmbeddings({
+          // console.log("input", input)                               
+          // const embeddingResponse = await openai.embeddings.create({
           //   model: 'nomic-embed-text:latest',
-          //   apiKey: process.env.OPENAI_KEY,
-          //   configuration: {
-          //     // baseURL: 'http://10.128.138.175:11434/v1',
-          //     baseURL: 'http://10.128.138.175:8080/v1',
-          //   }
+          //   input: [input],
           // })
-
-          // const custom_model = new OllamaEmbeddings({
-          //   model:'nomic-embed-text:latest',
-          //   baseUrl: 'http://10.128.138.175:11434',
-          // })
-
-
-          // const embeddingResponse = await custom_model.embedDocuments([input])
           // console.log("embeddingResponse", embeddingResponse)
+          // // if (embeddingResponse.data[0].status !== 200) {
+          // //   throw new Error(inspect(embeddingResponse.data, false, 2))
+          // // }
+
+          // const responseData = embeddingResponse.data[0].embedding
+          // console.log("responseData", responseData)   
+          // console.log("embedding length", embeddingResponse.data[0].embedding.length)
+
+          const embeddingResponse = await ollama.embeddings({
+            model: 'nomic-embed-text:latest',
+            prompt: input,  
+          })
+
+          console.log("embeddingResponse", embeddingResponse)
+          const responseData = embeddingResponse.embedding  
 
           const { error: insertPageSectionError, data: pageSection } = await supabaseClient
-            .from('nods_page_section')
+            .from('nodes_page_section')
             .insert({
               page_id: page.id,
               slug,
               heading,
               content,
-              token_count: embeddingResponse.usage.total_tokens,
+              token_count: null,
               embedding: responseData,
             })
             .select()
@@ -520,7 +505,7 @@ async function generateEmbeddings() {
 
       // Set page checksum so that we know this page was stored successfully
       const { error: updatePageError } = await supabaseClient
-        .from('nods_page')
+        .from('nodes_page')
         .update({ checksum })
         .filter('id', 'eq', page.id)
 

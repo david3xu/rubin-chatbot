@@ -20,8 +20,12 @@ npx supabase db reset
 
 
 # connect to supabase cloud
+npx supabase login
+npx supabase link 
+npx supabase db push
 
-
+# customize next dev address
+next dev -H 10.128.138.175
 
 # connect to github
 gh repo create rubin-chatbot --public
@@ -37,6 +41,7 @@ git push
 # auto indent code in vscode
 shift + alt + f
 
-
+# generate data 
+pnpm run embeddings
 
 
