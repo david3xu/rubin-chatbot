@@ -17,6 +17,7 @@ begin
       path text not null unique,
       checksum text,
       type text,
+      meta jsonb,
       source text
     );
   end if;
@@ -40,6 +41,23 @@ begin
 end
 $$;
 alter table nodes_page_section enable row level security;
+
+-- Add the fts column to the nodes_page_section table
+alter table nodes_page_section
+add column fts tsvector;
+
+-- Populate the fts column with the concatenated text of the relevant columns
+update nodes_page_section
+set fts = to_tsvector('english', coalesce(heading, '') || ' ' || coalesce(content, ''));
+
+
+-- Create an index for the full-text search
+create index on nodes_page_section using gin(fts);
+
+-- Create an index for the semantic vector search
+create index on nodes_page_section using hnsw (embedding vector_ip_ops);
+
+ANALYZE nodes_page_section;
 
 create or replace function pgvector_hybrid_search(
   query_text text,
@@ -93,17 +111,6 @@ limit
   least(match_count, 30);
 $$;
 
-
-
-
--- Create an index for the full-text search
-create index on nodes_page_section using gin(fts);
-
--- Create an index for the semantic vector search
-create index on nodes_page_section using hnsw (embedding vector_ip_ops);
-
-ANALYZE nodes_page_section;
-
 -- Create hybrid search function
 create or replace function hybrid_search(
   query_text text,
@@ -114,7 +121,7 @@ create or replace function hybrid_search(
   rrf_k int = 50
 )
 returns setof nodes_page_section
-language plpgsql 
+language sql 
 as $$
 with full_text as (
   select 

@@ -75,7 +75,7 @@ export default async function handler(req: NextRequest) {
     console.log(`embedding length: ${embeddingResponse.embedding.length}`);
 
     const { error: matchError, data: pageSections } = await supabaseClient.rpc(
-      "pgvector_hybrid_search",
+      "hybrid_search",
       {
         query_text: sanitizedQuery,
         query_embedding: embeddingResponse.embedding,
@@ -118,8 +118,8 @@ export default async function handler(req: NextRequest) {
       contextText += `${content.trim()}\n---\n`;
     }
 
-    // console.log(`contextText: ${contextText}`);
-    // console.log(`sanitizedQuery: ${sanitizedQuery}`);
+    console.log(`contextText: ${contextText}`);
+    console.log(`sanitizedQuery: ${sanitizedQuery}`);
 
     const prompt = codeBlock`
       ${oneLine`

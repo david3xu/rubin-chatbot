@@ -472,6 +472,7 @@ async function generateEmbeddings() {
 
           console.log("embeddingResponse", embeddingResponse)
           const responseData = embeddingResponse.embedding  
+          console.log("responseData", responseData)
 
           const { error: insertPageSectionError, data: pageSection } = await supabaseClient
             .from('nodes_page_section')
