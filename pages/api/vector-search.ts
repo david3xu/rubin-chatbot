@@ -72,16 +72,28 @@ export default async function handler(req: NextRequest) {
     });
 
     // console.log(`embeddingResponse: ${JSON.stringify(embeddingResponse)}`)
-    console.log(`embedding length: ${embeddingResponse.embedding.length}`);
+    // console.log(`embedding length: ${embeddingResponse.embedding.length}`);
 
     const { error: matchError, data: pageSections } = await supabaseClient.rpc(
       "hybrid_search",
+      // 'pgvector_hybrid_search',
+      // 'match_page_sections',
       {
         query_text: sanitizedQuery,
         query_embedding: embeddingResponse.embedding,
         match_count: 10,
       },
     );
+
+    // const { error: matchError, data: pageSections } = await supabaseClient.rpc(
+    //   'match_page_sections',
+    //   {
+    //     embedding: responseData.embedding,
+    //     match_threshold: 0.2,
+    //     match_count: 10,
+    //     min_content_length: 50,
+    //   }
+    // )
 
     // console.log(`pageSections: ${JSON.stringify(pageSections)}`);
 
@@ -125,7 +137,11 @@ export default async function handler(req: NextRequest) {
       ${oneLine`
         You're an AI assistant who answers questions about documents and related code snippets.
       
-        You're a chat bot, so keep your replies succinct and conversational.
+        You're a chat bot, so keep your replies succinct and conversational. 
+        
+        Don't repeat the question in your answer.
+
+        Don't repeat the prompt in your answer.
 
         You're only allowed to use the documents below to answer the question.
 
@@ -163,7 +179,7 @@ export default async function handler(req: NextRequest) {
     });
 
     const response = await openai_ollama.chat.completions.create({
-      model: "cira-dpo-llama2:latest",
+      model: "llama3.1",
       messages: [chatMessage],
       max_tokens: 512,
       temperature: 0,

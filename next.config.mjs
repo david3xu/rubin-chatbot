@@ -1,16 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['global.curtin.edu.au'],
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: '10.128.138.175',
+        port: '3000',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'global.curtin.edu.au',
+        port: '',
+        pathname: '/**',
+      },
+    ],
   },
 };
 
 export default nextConfig;
-
-
-// // next.config.js
-// module.exports = {
-//   images: {
-//     domains: ['global.curtin.edu.au'],
-//   },
-// };
