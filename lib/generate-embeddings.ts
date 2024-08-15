@@ -466,13 +466,14 @@ async function generateEmbeddings() {
           // console.log("embedding length", embeddingResponse.data[0].embedding.length)
 
           const embeddingResponse = await ollama.embeddings({
-            model: 'nomic-embed-text:latest',
+            model: 'snowflake-arctic-embed:335m',
+            // model: 'mxbai-embed-large:latest',
             prompt: input,  
           })
 
           console.log("embeddingResponse", embeddingResponse)
           const responseData = embeddingResponse.embedding  
-          console.log("responseData", responseData)
+          console.log("responseData", responseData.length)
 
           const { error: insertPageSectionError, data: pageSection } = await supabaseClient
             .from('nodes_page_section')

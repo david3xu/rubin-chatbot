@@ -67,12 +67,14 @@ export default async function handler(req: NextRequest) {
     // console.log(`embedding: ${embedding}`)
 
     const embeddingResponse = await ollama.embeddings({
-      model: "nomic-embed-text:latest",
+      // model: "nomic-embed-text:latest",
+      // model: "snowflake-arctic-embed:335m",
+      model: "mxbai-embed-large:latest",
       prompt: sanitizedQuery,
     });
 
-    // console.log(`embeddingResponse: ${JSON.stringify(embeddingResponse)}`)
-    // console.log(`embedding length: ${embeddingResponse.embedding.length}`);
+    console.log(`embeddingResponse: ${JSON.stringify(embeddingResponse)}`)
+    console.log(`embedding length: ${embeddingResponse.embedding.length}`);
 
     const { error: matchError, data: pageSections } = await supabaseClient.rpc(
       "hybrid_search",
@@ -89,9 +91,9 @@ export default async function handler(req: NextRequest) {
     //   'match_page_sections',
     //   {
     //     embedding: responseData.embedding,
-    //     match_threshold: 0.2,
+    //     match_threshold: 0.1,
     //     match_count: 10,
-    //     min_content_length: 50,
+    //     min_content_length: 5,
     //   }
     // )
 
@@ -101,17 +103,18 @@ export default async function handler(req: NextRequest) {
       throw new ApplicationError("Failed to match page sections", matchError);
     }
 
-    // // Direct database query for debugging
-    // const { data: debugData, error: debugError } = await supabaseClient
-    //   .from("nodes_page_section")
-    //   .select("*")
-    //   .limit(10);
+    // Direct database query for debugging
+    const { data: debugData, error: debugError } = await supabaseClient
+      .from("nodes_page_section")
+      .select("*")
+      .limit(10);
 
-    // if (debugError) {
-    //   console.error(`debugError: ${debugError.message}`);
-    // } else {
-    //   console.log(`debugData: ${JSON.stringify(debugData)}`);
-    // }
+    if (debugError) {
+      console.error(`debugError: ${debugError.message}`);
+    } else {
+      // console.log(`debugData: ${JSON.stringify(debugData)}`);
+      console.log(`debugData length: ${debugData.length}`);
+    }
 
     const tokenizer = new GPT3Tokenizer({ type: "gpt3" });
     let tokenCount = 0;
@@ -123,15 +126,17 @@ export default async function handler(req: NextRequest) {
       const encoded = tokenizer.encode(content);
       tokenCount += encoded.text.length;
 
-      if (tokenCount >= 1500) {
-        break;
-      }
+      // if (tokenCount >= 1500) {
+      //   break;
+      // }
 
       contextText += `${content.trim()}\n---\n`;
     }
 
+
+
     console.log(`contextText: ${contextText}`);
-    console.log(`sanitizedQuery: ${sanitizedQuery}`);
+    // console.log(`sanitizedQuery: ${sanitizedQuery}`);
 
     const prompt = codeBlock`
       ${oneLine`
@@ -158,7 +163,7 @@ export default async function handler(req: NextRequest) {
       ${contextText}
 
       Question: """
-      ${query}
+      ${sanitizedQuery}
       """
 
       Answer as markdown (including related code snippets if available):
@@ -178,13 +183,55 @@ export default async function handler(req: NextRequest) {
       baseURL: openaiOllamaUrl,
     });
 
+    const tools: OpenAI.ChatCompletionTool = {
+      type: "function",
+      function: {
+        name: "questionAnswer",
+        description: "The answer to the question",
+        parameters: {
+          type: "object",
+          properties: {
+            answer: {
+              type: "string",
+              description: "The answer to the question",
+            },
+            followupQuestions: {
+              type: "array",
+              items: {
+                type: "string",
+                description: "Followup questions the student should also ask",
+              },
+            },
+          },
+          required: ["answer", "followupQuestions"],
+        },
+      },
+    }
+
+    // const response_test = await openai_ollama.chat.completions.create({
+    //   model: "gpt-4o:latest",
+    //   messages: [chatMessage],
+    //   max_tokens: 512,
+    //   temperature: 0,
+    //   // stream: true,
+    //   // tool_choice: "required",
+    //   tools: [tools],
+    // });
+
+    // console.log(`response_test: ${JSON.stringify(response_test)}`);
+
+
     const response = await openai_ollama.chat.completions.create({
-      model: "llama3.1",
+      model: "llama3.1:latest",
       messages: [chatMessage],
       max_tokens: 512,
       temperature: 0,
       stream: true,
+      // tool_choice: "required",
+      tools: [tools],
     });
+
+    // console.log(`response: ${JSON.stringify(response)}`);
 
     // if (!response.ok) {
     //   const error = await response.json()
@@ -193,9 +240,11 @@ export default async function handler(req: NextRequest) {
 
     // Transform the response into a readable stream
     const stream = OpenAIStream(response);
-    // console.log(`stream: ${stream}`);
+    // console.log(`stream: ${stream.toString()}`);
+    // console.log(`contextText: ${contextText}`);
 
     // Return a StreamingTextResponse, which can be consumed by the client
+    // console.log(`stream: ${new StreamingTextResponse(stream)}`)
     return new StreamingTextResponse(stream);
   } catch (err: unknown) {
     if (err instanceof UserError) {

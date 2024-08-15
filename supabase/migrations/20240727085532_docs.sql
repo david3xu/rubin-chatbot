@@ -19,7 +19,7 @@ create table "public"."nodes_page_section" (
   content text,
   token_count int,
   fts tsvector generated always as (to_tsvector('english', coalesce(heading, '') || ' ' || coalesce(content, ''))) stored,
-  embedding vector(768),
+  embedding vector(1024),
   slug text,
   heading text
 );
@@ -29,16 +29,16 @@ alter table "public"."nodes_page_section" enable row level security;
 create index on "public"."nodes_page_section" using gin(fts);
 
 
--- Create an index for the semantic vector search using ivfflat
-create index on "public"."nodes_page_section" using ivfflat (embedding) with (lists = 100);
+-- -- Create an index for the semantic vector search using ivfflat
+-- create index on "public"."nodes_page_section" using ivfflat (embedding) with (lists = 100);
 
--- -- Create an index for the semantic vector search
--- create index on "public"."nodes_page_section" using hnsw (embedding vector_ip_ops);
+-- Create an index for the semantic vector search
+create index on "public"."nodes_page_section" using hnsw (embedding vector_ip_ops);
 
 -- Create hybrid search function
 create or replace function hybrid_search(
   query_text text,
-  query_embedding vector(768),
+  query_embedding vector(1024),
   match_count int, 
   full_text_weight float = 1,
   semantic_weight float = 1,
@@ -84,7 +84,7 @@ limit
 $$;
 
 -- Create embedding similarity search functions
-create or replace function match_page_sections(embedding vector(768), match_threshold float, match_count int, min_content_length int)
+create or replace function match_page_sections(embedding vector(1024), match_threshold float, match_count int, min_content_length int)
 returns table (id bigint, page_id bigint, slug text, heading text, content text, similarity float)
 language plpgsql
 as $$
@@ -107,7 +107,7 @@ end;
 $$;
 
 -- create or replace function match_page_sections(
---   embedding vector(768),
+--   embedding vector(1024),
 --   match_threshold float,
 --   match_count int,
 --   min_content_length int
@@ -213,7 +213,7 @@ $$;
 --   content text,
 --   token_count int,
 --   fts tsvector generated always as (to_tsvector('english', coalesce(heading, '') || ' ' || coalesce(content, ''))) stored,
---   embedding vector(768),
+--   embedding vector(1024),
 --   slug text,
 --   heading text
 -- );
@@ -233,7 +233,7 @@ $$;
 -- -- Create hybrid search function
 -- create or replace function hybrid_search(
 --   query_text text,
---   query_embedding vector(768),
+--   query_embedding vector(1024),
 --   match_count int, 
 --   full_text_weight float = 1,
 --   semantic_weight float = 1,
@@ -280,7 +280,7 @@ $$;
 -- $$;
 
 -- -- Create embedding similarity search functions
--- create or replace function match_page_sections(embedding vector(768), match_threshold float, match_count int, min_content_length int)
+-- create or replace function match_page_sections(embedding vector(1024), match_threshold float, match_count int, min_content_length int)
 -- returns table (id bigint, page_id bigint, slug text, heading text, content text, similarity float)
 -- language plpgsql
 -- as $$
@@ -395,7 +395,7 @@ $$;
 --       page_id bigint not null references nodes_page on delete cascade,
 --       content text,
 --       token_count int,
---       embedding vector(768),
+--       embedding vector(1024),
 --       slug text,
 --       heading text
 --     );
@@ -434,7 +434,7 @@ $$;
 
 -- create or replace function pgvector_hybrid_search(
 --   query_text text,
---   query_embedding vector(768),
+--   query_embedding vector(1024),
 --   match_count int, 
 --   full_text_weight float = 1,
 --   semantic_weight float = 1,
@@ -487,7 +487,7 @@ $$;
 -- -- Create hybrid search function
 -- create or replace function hybrid_search(
 --   query_text text,
---   query_embedding vector(768),
+--   query_embedding vector(1024),
 --   match_count int, 
 --   full_text_weight float = 1,
 --   semantic_weight float = 1,
@@ -541,7 +541,7 @@ $$;
 
 -- -- Create embedding similarity search functions
 -- create or replace function match_page_sections(
---   embedding vector(768), 
+--   embedding vector(1024), 
 --   match_threshold float,
 --   match_count int, 
 --   min_content_length int
@@ -637,7 +637,7 @@ $$;
 
 -- -- -- Create a function to similarity search for documents 
 -- -- create or replace function match_documents(
--- --   query_embedding vector(768),
+-- --   query_embedding vector(1024),
 -- --   match_count int DEFAULT null,
 -- --   filter jsonb DEFAULT '{}'
 -- -- ) returns table (

@@ -22,6 +22,9 @@ export function SearchDialog() {
     api: '/api/vector-search',
   })
 
+  // console.log('completion', completion)
+  
+
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && e.metaKey) {

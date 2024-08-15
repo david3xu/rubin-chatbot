@@ -22,10 +22,12 @@ npx supabase db reset
 # connect to supabase cloud
 npx supabase login
 npx supabase link 
+npx supabase link --project-ref=edvwvhnakzgyungjmhol             #  HhMgEBmhy758SnQV
 npx supabase db push
 
 # customize next dev address
 next dev -H 10.128.138.175
+npm run dev -H 10.128.138.175
 
 # connect to github
 gh repo create rubin-chatbot --public
@@ -44,4 +46,22 @@ shift + alt + f
 # generate data 
 pnpm run embeddings
 
+# set up the project
+####################################################
+docker ps -asupabase status --network-id 10.128.138.175
+supabase db reset --network-id 10.128.138.175
+supabase migration up #--network-id 10.128.138.175
+supabase functions serve --env-file=.env.local --network-id 10.128.138.175
+"dev": "next dev -H 10.128.138.175",
+yarn dev
+
+
+
+# Feel free to extend this app in any way you like. Here are some ideas for next steps:
+
+# Record message history in the database (and generate embeddings on them for RAG memory)
+# Support more file formats than just markdown
+# Pull in documents from the Notion API
+# Restrict chat to user-selected documents
+# Perform RAG on images using CLIP embeddings
 
